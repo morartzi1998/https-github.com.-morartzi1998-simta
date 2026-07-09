@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>פונט סימטה</title>
+  <style>
+    @font-face {
+      font-family: "Simta";
+      src: url("./simta3-simta.otf") format("opentype");
+      font-display: block;
+    }
+
+    :root {
+      color-scheme: dark;
+      --bg: #121d63;
+      --ink: #fffaf0;
+      --muted: rgba(255, 250, 240, 0.68);
+      --line: rgba(255, 250, 240, 0.64);
+      --accent: #fffaf0;
+      --accent-2: #fffaf0;
+      --panel: rgba(12, 22, 82, 0.88);
+    }
+
+    body[data-theme="negative"] {
+      --bg: #fffaf0;
+      --ink: #111b5a;
+      --muted: rgba(17, 27, 90, 0.68);
+      --line: rgba(17, 27, 90, 0.58);
+      --accent: #111b5a;
+      --accent-2: #111b5a;
+      --panel: rgba(255, 250, 240, 0.9);
+      color-scheme: light;
+    }
+
+    body[data-theme="mono-positive"] {
+      --bg: #f7f7f2;
+      --ink: #101010;
+      --muted: rgba(16, 16, 16, 0.64);
+      --line: rgba(16, 16, 16, 0.52);
+      --accent: #101010;
+      --accent-2: #101010;
+      --panel: rgba(247, 247, 242, 0.9);
+      color-scheme: light;
+    }
+
+    body[data-theme="mono-negative"] {
+      --bg: #080808;
+      --ink: #f7f7f2;
+      --muted: rgba(247, 247, 242, 0.68);
+      --line: rgba(247, 247, 242, 0.56);
+      --accent: #f7f7f2;
+      --accent-2: #f7f7f2;
+      --panel: rgba(8, 8, 8, 0.9);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      min-height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Simta", system-ui, sans-serif;
+      overflow: hidden;
+    }
+
+    body {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      min-height: 100vh;
+    }
+
+    .stage {
+      position: relative;
+      min-height: 0;
+      isolation: isolate;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 430px;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .topbar {
+      position: absolute;
+      inset: 24px 24px auto 24px;
+      z-index: 2;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      gap: 20px;
+      pointer-events: none;
+    }
+
+    .title {
+      pointer-events: auto;
+      max-width: min(62vw, 760px);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 3.6vw, 48px);
+      line-height: 0.95;
+      font-weight: 400;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, auto) repeat(4, minmax(112px, 172px)) minmax(250px, auto) minmax(170px, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      direction: rtl;
+    }
+
+    button {
+      width: 46px;
+      height: 46px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--ink);
+      font: 700 18px/1 ui-sans-serif, system-ui, sans-serif;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: transform 160ms ease, background 160ms ease, opacity 160ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    body[data-theme="negative"] button:hover,
+    body[data-theme="mono-positive"] button:hover {
+      background: rgba(17, 27, 90, 0.08);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .control {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .letters {
+      position: absolute;
+      inset: 168px 32px auto 32px;
+      z-index: 2;
+      display: flex;
+      justify-content: flex-start;
+      gap: 0;
+      align-items: center;
+      min-width: 0;
+      overflow-x: auto;
+      padding: 2px 0;
+      color: var(--muted);
+      font-family: "Simta", system-ui, sans-serif;
+      font-size: 18px;
+      line-height: 1;
+      letter-spacing: 0;
+      white-space: nowrap;
+      pointer-events: auto;
+      scrollbar-width: none;
+      direction: rtl;
+    }
+
+    .letters::-webkit-scrollbar {
+      display: none;
+    }
+
+    .letters span {
+      display: inline-block;
+      width: auto;
+      min-width: 0;
+      height: auto;
+      padding: 0 1px 5px;
+      line-height: 1;
+      border-radius: 4px;
+    }
+
+    .letters .active {
+      color: var(--ink);
+      background: transparent;
+      box-shadow: inset 0 -1.5px 0 var(--ink);
+    }
+
+    .regular-glyph {
+      position: absolute;
+      left: 32px;
+      top: 28px;
+      z-index: 2;
+      min-width: 64px;
+      color: var(--ink);
+      font-family: "Simta", system-ui, sans-serif;
+      font-size: clamp(42px, 5.8vw, 84px);
+      line-height: 0.78;
+      text-align: left;
+      direction: ltr;
+      pointer-events: none;
+      opacity: 0.96;
+    }
+
+    .type-panel {
+      position: absolute;
+      left: 32px;
+      right: 32px;
+      top: 98px;
+      z-index: 3;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      direction: rtl;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .type-panel label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .type-panel input {
+      width: 100%;
+      height: 38px;
+      border: 0;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--ink);
+      padding: 0 12px;
+      font: 600 15px/1 ui-sans-serif, system-ui, sans-serif;
+      outline: none;
+    }
+
+    .type-panel input:focus {
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: none;
+    }
+
+    body[data-theme="negative"] .type-panel input,
+    body[data-theme="mono-positive"] .type-panel input {
+      background: rgba(17, 27, 90, 0.04);
+    }
+
+    .status {
+      display: none;
+      direction: ltr;
+      color: var(--muted);
+      font: 600 12px/1 ui-sans-serif, system-ui, sans-serif;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .mode {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(54px, 1fr));
+      gap: 4px;
+      min-width: 186px;
+      padding: 4px;
+      border-radius: 8px;
+      background: transparent;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .mode button {
+      width: auto;
+      height: 38px;
+      border: 0;
+      background: transparent;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .mode button[aria-pressed="true"] {
+      background: var(--accent-2);
+      color: var(--bg);
+    }
+
+    .theme {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(44px, 1fr));
+      gap: 4px;
+      min-width: 250px;
+      padding: 4px;
+      border-radius: 8px;
+      background: transparent;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .theme button {
+      width: auto;
+      height: 38px;
+      border: 0;
+      background: transparent;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .theme button[aria-pressed="true"] {
+      background: var(--accent-2);
+      color: var(--bg);
+    }
+
+    @media (max-width: 760px) {
+      body {
+        overflow: auto;
+      }
+
+      .topbar {
+        inset: 18px 18px auto 18px;
+      }
+
+      h1 {
+        white-space: normal;
+      }
+
+      .controls {
+        grid-template-columns: repeat(3, 46px) 1fr;
+      }
+
+      .control {
+        grid-column: 1 / -1;
+      }
+
+      .letters {
+        inset: 166px 18px auto 18px;
+      }
+
+      .type-panel {
+        top: 98px;
+        right: 18px;
+        left: 18px;
+      }
+
+      .status {
+        grid-column: 1 / -1;
+        text-align: right;
+      }
+
+      .mode {
+        grid-column: 1 / -1;
+      }
+
+      .theme {
+        grid-column: 1 / -1;
+        min-width: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <div class="topbar">
+      <section class="title" aria-label="כותרת">
+        <h1>פונט סימטה</h1>
+      </section>
+    </div>
+    <div class="type-panel">
+      <label for="customText">טקסט חופשי</label>
+      <input id="customText" type="text" value="" placeholder="כתוב כאן אותיות, מספרים או סימנים">
+    </div>
+    <div class="letters" id="letters" aria-hidden="true"></div>
+    <div class="regular-glyph" id="regularGlyph" aria-hidden="true">א</div>
+    <canvas id="canvas" aria-label="פונט סימטה באנימציית גליפים"></canvas>
+  </main>
+
+  <footer class="controls" aria-label="בקרות אנימציה">
+    <button id="next" type="button" title="האות הבאה" aria-label="האות הבאה">›</button>
+    <button id="toggle" type="button" title="עצירה או ניגון" aria-label="עצירה או ניגון">Ⅱ</button>
+    <button id="prev" type="button" title="האות הקודמת" aria-label="האות הקודמת">‹</button>
+
+    <div class="control">
+      <label for="speed"><span>קצב</span><output id="speedOut">1.0x</output></label>
+      <input id="speed" type="range" min="0.45" max="2.4" step="0.05" value="1">
+    </div>
+
+    <div class="control">
+      <label for="density"><span>צפיפות</span><output id="densityOut">9000</output></label>
+      <input id="density" type="range" min="2500" max="18000" step="250" value="9000">
+    </div>
+
+    <div class="control">
+      <label for="sharpness"><span>חדות</span><output id="sharpnessOut">קונטור</output></label>
+      <input id="sharpness" type="range" min="0" max="1" step="0.01" value="0.88">
+    </div>
+
+    <div class="control">
+      <label for="dispersion"><span>פיזור</span><output id="dispersionOut">נמוך</output></label>
+      <input id="dispersion" type="range" min="0" max="1" step="0.01" value="0.16">
+    </div>
+
+    <div class="mode" aria-label="בחירת סט גליפים">
+      <button class="modeButton" type="button" data-mode="hebrew" aria-pressed="true">עברית</button>
+      <button class="modeButton" type="button" data-mode="numbers" aria-pressed="false">מספרים</button>
+      <button class="modeButton" type="button" data-mode="all" aria-pressed="false">הכל</button>
+    </div>
+
+    <div class="theme" aria-label="בחירת צבעוניות">
+      <button class="themeButton" type="button" data-theme="positive" aria-pressed="true">פוזיטיב</button>
+      <button class="themeButton" type="button" data-theme="negative" aria-pressed="false">נגטיב</button>
+      <button class="themeButton" type="button" data-theme="mono-positive" aria-pressed="false">ש/ל</button>
+      <button class="themeButton" type="button" data-theme="mono-negative" aria-pressed="false">נגטיב ש/ל</button>
+    </div>
+
+    <div class="status" id="fpsStatus">100 fps target</div>
+  </footer>
+
+  <script>
+    const glyphSets = {
+      hebrew: ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "כ", "ל", "מ", "נ", "ס", "ע", "פ", "צ", "ק", "ר", "ש", "ת"],
+      numbers: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", ",", ":", ";", "?", "!", "+", "-", "=", "/", "%", "&"],
+      all: ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "כ", "ל", "מ", "נ", "ס", "ע", "פ", "צ", "ק", "ר", "ש", "ת", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", ",", ":", ";", "?", "!", "+", "-", "=", "/", "%", "&"]
+    };
+    let letters = glyphSets.hebrew;
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d", { alpha: false });
+    const lettersStrip = document.getElementById("letters");
+    const regularGlyph = document.getElementById("regularGlyph");
+    const speed = document.getElementById("speed");
+    const speedOut = document.getElementById("speedOut");
+    const density = document.getElementById("density");
+    const densityOut = document.getElementById("densityOut");
+    const sharpness = document.getElementById("sharpness");
+    const sharpnessOut = document.getElementById("sharpnessOut");
+    const dispersion = document.getElementById("dispersion");
+    const dispersionOut = document.getElementById("dispersionOut");
+    const toggle = document.getElementById("toggle");
+    const prev = document.getElementById("prev");
+    const next = document.getElementById("next");
+    const fpsStatus = document.getElementById("fpsStatus");
+    const customText = document.getElementById("customText");
+    const modeButtons = [...document.querySelectorAll(".modeButton")];
+    const themeButtons = [...document.querySelectorAll(".themeButton")];
+
+    const themes = {
+      positive: {
+        bg: "#121d63",
+        ink: "#fffaf0",
+        grid: "rgba(255, 250, 240, 0.56)",
+        speckA: "rgba(74, 119, 219, 0.2)",
+        speckB: "rgba(0, 198, 255, 0.16)",
+        scratch: "rgba(255, 250, 240, 0.22)",
+        particle: "rgba(255, 250, 240, 0.92)",
+        particleSoft: "rgba(255, 250, 240, 0.62)",
+        composite: "source-over"
+      },
+      negative: {
+        bg: "#fffaf0",
+        ink: "#111b5a",
+        grid: "rgba(17, 27, 90, 0.54)",
+        speckA: "rgba(17, 27, 90, 0.12)",
+        speckB: "rgba(0, 84, 190, 0.12)",
+        scratch: "rgba(17, 27, 90, 0.2)",
+        particle: "rgba(17, 27, 90, 0.9)",
+        particleSoft: "rgba(17, 27, 90, 0.58)",
+        composite: "source-over"
+      },
+      "mono-positive": {
+        bg: "#f7f7f2",
+        ink: "#101010",
+        grid: "rgba(16, 16, 16, 0.42)",
+        speckA: "rgba(16, 16, 16, 0.1)",
+        speckB: "rgba(16, 16, 16, 0.08)",
+        scratch: "rgba(16, 16, 16, 0.18)",
+        particle: "rgba(16, 16, 16, 0.9)",
+        particleSoft: "rgba(16, 16, 16, 0.55)",
+        composite: "source-over"
+      },
+      "mono-negative": {
+        bg: "#080808",
+        ink: "#f7f7f2",
+        grid: "rgba(247, 247, 242, 0.44)",
+        speckA: "rgba(247, 247, 242, 0.13)",
+        speckB: "rgba(247, 247, 242, 0.07)",
+        scratch: "rgba(247, 247, 242, 0.2)",
+        particle: "rgba(247, 247, 242, 0.92)",
+        particleSoft: "rgba(247, 247, 242, 0.58)",
+        composite: "source-over"
+      }
+    };
+
+    const offscreen = document.createElement("canvas");
+    const offctx = offscreen.getContext("2d", { willReadFrequently: true });
+    const state = {
+      index: 0,
+      particles: [],
+      from: [],
+      to: [],
+      start: performance.now(),
+      duration: 1800,
+      hold: 520,
+      playing: true,
+      customText: "",
+      textMode: false,
+      particleCount: Number(density.value),
+      sharpness: Number(sharpness.value),
+      dispersion: Number(dispersion.value),
+      pointer: null,
+      dpr: 1,
+      theme: "positive",
+      grain: [],
+      scratches: [],
+      textScale: 1,
+      targetFrameMs: 10,
+      lastPaint: 0,
+      fpsLast: performance.now(),
+      fpsFrames: 0
+    };
+
+    function renderLetterStrip() {
+      lettersStrip.innerHTML = letters.map((letter, index) => `<span data-index="${index}">${letter}</span>`).join("");
+    }
+
+    function textToGlyphs(value) {
+      return [...value].filter((char) => char.trim().length > 0);
+    }
+
+    function resize() {
+      state.dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.floor(rect.width * state.dpr));
+      canvas.height = Math.max(1, Math.floor(rect.height * state.dpr));
+      offscreen.width = canvas.width;
+      offscreen.height = canvas.height;
+      ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+      buildGrain();
+      rebuild(true);
+    }
+
+    function buildGrain() {
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      const count = Math.round((width * height) / 620);
+      state.grain = Array.from({ length: count }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        r: 0.35 + Math.random() * 2.1,
+        a: 0.1 + Math.random() * 0.34,
+        type: Math.random() > 0.68 ? "b" : "a"
+      }));
+      state.scratches = Array.from({ length: Math.round((width * height) / 11500) }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        len: 10 + Math.random() * 80,
+        angle: Math.random() * Math.PI,
+        a: 0.08 + Math.random() * 0.18
+      }));
+    }
+
+    function sampleLetter(letter) {
+      const width = offscreen.width;
+      const height = offscreen.height;
+      const cssWidth = width / state.dpr;
+      const cssHeight = height / state.dpr;
+      const fontSize = Math.min(cssWidth * 0.58, cssHeight * 0.72);
+
+      offctx.setTransform(1, 0, 0, 1, 0, 0);
+      offctx.clearRect(0, 0, width, height);
+      offctx.scale(state.dpr, state.dpr);
+      offctx.fillStyle = "#fff";
+      offctx.textAlign = "center";
+      offctx.textBaseline = "middle";
+      offctx.font = `${fontSize}px Simta, sans-serif`;
+      offctx.fillText(letter, cssWidth / 2, cssHeight * 0.62 + fontSize * 0.03);
+
+      const data = offctx.getImageData(0, 0, width, height).data;
+      const points = [];
+      const stride = Math.max(3, Math.floor(Math.sqrt((width * height) / (state.particleCount * 80))));
+      for (let y = 0; y < height; y += stride) {
+        for (let x = 0; x < width; x += stride) {
+          const alpha = data[(y * width + x) * 4 + 3];
+          if (alpha > 70) {
+            points.push({
+              x: x / state.dpr + (Math.random() - 0.5) * stride * 0.55,
+              y: y / state.dpr + (Math.random() - 0.5) * stride * 0.55
+            });
+          }
+        }
+      }
+      return normalizePoints(points, state.particleCount);
+    }
+
+    function sampleTextLine(text) {
+      const width = offscreen.width;
+      const height = offscreen.height;
+      const cssWidth = width / state.dpr;
+      const cssHeight = height / state.dpr;
+      const cleanText = text.trim();
+      const maxWidth = cssWidth * 0.78;
+      const baseFontSize = Math.min(cssWidth * 0.12, cssHeight * 0.26);
+      let fontSize = baseFontSize;
+
+      offctx.setTransform(1, 0, 0, 1, 0, 0);
+      offctx.clearRect(0, 0, width, height);
+      offctx.scale(state.dpr, state.dpr);
+      offctx.fillStyle = "#fff";
+      offctx.textAlign = "center";
+      offctx.textBaseline = "middle";
+      offctx.direction = "rtl";
+      offctx.font = `${fontSize}px Simta, sans-serif`;
+
+      const measured = offctx.measureText(cleanText).width;
+      if (measured > maxWidth) {
+        fontSize = Math.max(34, fontSize * (maxWidth / measured));
+        offctx.font = `${fontSize}px Simta, sans-serif`;
+      }
+      state.textScale = Math.max(0.28, Math.min(1, fontSize / baseFontSize));
+
+      offctx.fillText(cleanText, cssWidth / 2, cssHeight * 0.54);
+      offctx.direction = "inherit";
+
+      const data = offctx.getImageData(0, 0, width, height).data;
+      const points = [];
+      const compactBoost = 1 + (1 - state.textScale) * 2.7;
+      const textParticleCount = Math.min(32000, Math.round(state.particleCount * compactBoost));
+      const stride = Math.max(1, Math.floor(Math.sqrt((width * height) / (textParticleCount * 115))));
+      for (let y = 0; y < height; y += stride) {
+        for (let x = 0; x < width; x += stride) {
+          const alpha = data[(y * width + x) * 4 + 3];
+          if (alpha > 70) {
+            points.push({
+              x: x / state.dpr + (Math.random() - 0.5) * stride * 0.45,
+              y: y / state.dpr + (Math.random() - 0.5) * stride * 0.45
+            });
+          }
+        }
+      }
+      return normalizePoints(points, textParticleCount, 0.75);
+    }
+
+    function normalizePoints(points, count, jitter = 2.3) {
+      if (!points.length) return Array.from({ length: count }, () => centerPoint());
+      const shuffled = points.slice().sort(() => Math.random() - 0.5);
+      const result = [];
+      for (let i = 0; i < count; i += 1) {
+        const source = shuffled[i % shuffled.length];
+        result.push({
+          x: source.x + (Math.random() - 0.5) * jitter,
+          y: source.y + (Math.random() - 0.5) * jitter
+        });
+      }
+      return result;
+    }
+
+    function centerPoint() {
+      return {
+        x: canvas.clientWidth / 2,
+        y: canvas.clientHeight * 0.62
+      };
+    }
+
+    function rebuild(keepLetter) {
+      const now = performance.now();
+      const targetPoints = state.textMode ? sampleTextLine(state.customText) : sampleLetter(letters[state.index]);
+      state.from = keepLetter && state.to.length ? state.to : targetPoints;
+      state.to = targetPoints;
+      state.particles = state.to.map((target, i) => {
+        const from = state.from[i] || centerPoint();
+        return {
+          x: from.x,
+          y: from.y,
+          sx: from.x,
+          sy: from.y,
+          tx: target.x,
+          ty: target.y,
+          baseSize: 0.85 + Math.random() * 1.7,
+          phase: Math.random() * Math.PI * 2,
+          fuzzX: (Math.random() - 0.5) * 2,
+          fuzzY: (Math.random() - 0.5) * 2,
+          scatterAngle: Math.random() * Math.PI * 2,
+          scatterRadius: 0.25 + Math.random() * 0.75,
+          tint: Math.random() > 0.56 ? "cool" : "warm"
+        };
+      });
+      state.start = now;
+      renderLetters();
+    }
+
+    function go(offset) {
+      if (state.textMode) return;
+      state.from = state.particles.map((p) => ({ x: p.x, y: p.y }));
+      state.index = (state.index + offset + letters.length) % letters.length;
+      state.to = sampleLetter(letters[state.index]);
+      state.particles = state.particles.map((p, i) => {
+        const target = state.to[i] || centerPoint();
+        return {
+          ...p,
+          sx: p.x,
+          sy: p.y,
+          tx: target.x,
+          ty: target.y,
+          phase: Math.random() * Math.PI * 2,
+          fuzzX: (Math.random() - 0.5) * 2,
+          fuzzY: (Math.random() - 0.5) * 2,
+          scatterAngle: Math.random() * Math.PI * 2,
+          scatterRadius: 0.25 + Math.random() * 0.75
+        };
+      });
+      state.start = performance.now();
+      renderLetters();
+    }
+
+    function ease(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function drawBackground(width, height) {
+      const theme = themes[state.theme];
+      ctx.fillStyle = theme.bg;
+      ctx.fillRect(0, 0, width, height);
+
+      for (const speck of state.grain) {
+        ctx.globalAlpha = speck.a;
+        ctx.fillStyle = speck.type === "b" ? theme.speckB : theme.speckA;
+        ctx.beginPath();
+        ctx.arc(speck.x, speck.y, speck.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = theme.scratch;
+      for (const scratch of state.scratches) {
+        const x2 = scratch.x + Math.cos(scratch.angle) * scratch.len;
+        const y2 = scratch.y + Math.sin(scratch.angle) * scratch.len;
+        ctx.globalAlpha = scratch.a;
+        ctx.beginPath();
+        ctx.moveTo(scratch.x, scratch.y);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function scheduleRender() {
+      window.setTimeout(() => render(performance.now()), state.targetFrameMs);
+    }
+
+    function render(now = performance.now()) {
+      state.lastPaint = now;
+
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      drawBackground(width, height);
+
+      const speedValue = Number(speed.value);
+      const elapsed = (now - state.start) * speedValue;
+      const t = Math.min(1, elapsed / state.duration);
+      const e = ease(t);
+      const pointer = state.pointer;
+      const theme = themes[state.theme];
+      const compactness = state.textMode ? 1 - state.textScale : 0;
+      const effectiveSharpness = state.textMode ? Math.max(state.sharpness, 0.88 + compactness * 0.12) : state.sharpness;
+      const effectiveDispersion = state.textMode ? state.dispersion * Math.max(0.12, 1 - compactness * 0.9) : state.dispersion;
+      const shapeSoftness = 1 - effectiveSharpness;
+      const particleSizeBoost = state.textMode ? Math.max(0.46, 0.72 - compactness * 0.22) : 1 + shapeSoftness * 1.55;
+      const contourFuzz = shapeSoftness * (state.textMode ? 5 : 18);
+      const scatter = effectiveDispersion * Math.min(width, height) * 0.18;
+
+      ctx.save();
+      ctx.globalCompositeOperation = theme.composite;
+      ctx.shadowBlur = shapeSoftness * 10;
+      ctx.shadowColor = theme.particle;
+      for (const p of state.particles) {
+        const wave = Math.sin(now * 0.003 + p.phase) * (1 - e) * 26;
+        const targetX = p.tx + p.fuzzX * contourFuzz;
+        const targetY = p.ty + p.fuzzY * contourFuzz;
+        const scatterX = Math.cos(p.scatterAngle) * p.scatterRadius * scatter;
+        const scatterY = Math.sin(p.scatterAngle) * p.scatterRadius * scatter;
+        p.x = p.sx + (targetX - p.sx) * e + Math.cos(p.phase) * wave + scatterX * e;
+        p.y = p.sy + (targetY - p.sy) * e + Math.sin(p.phase * 1.3) * wave + scatterY * e;
+
+        if (pointer) {
+          const dx = p.x - pointer.x;
+          const dy = p.y - pointer.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 92) {
+            const push = (1 - dist / 92) * 20;
+            p.x += (dx / Math.max(dist, 1)) * push;
+            p.y += (dy / Math.max(dist, 1)) * push;
+          }
+        }
+
+        ctx.fillStyle = p.tint === "cool" ? theme.particleSoft : theme.particle;
+        const size = p.baseSize * particleSizeBoost;
+        ctx.fillRect(p.x - size / 2, p.y - size / 2, size, size);
+      }
+      ctx.restore();
+
+      state.fpsFrames += 1;
+      if (now - state.fpsLast > 600) {
+        const fps = Math.round((state.fpsFrames * 1000) / (now - state.fpsLast));
+        fpsStatus.textContent = `${fps} fps / 100 target`;
+        state.fpsFrames = 0;
+        state.fpsLast = now;
+      }
+
+      if (!state.textMode && state.playing && t >= 1 && elapsed > state.duration + state.hold) {
+        go(1);
+      }
+
+      scheduleRender();
+    }
+
+    function renderLetters() {
+      if (regularGlyph) regularGlyph.textContent = state.textMode ? state.customText.trim().charAt(0) : letters[state.index];
+      [...lettersStrip.children].forEach((node, index) => {
+        node.classList.toggle("active", !state.textMode && index === state.index);
+      });
+    }
+
+    function setGlyphMode(mode) {
+      state.textMode = false;
+      state.customText = "";
+      letters = glyphSets[mode];
+      state.index = 0;
+      if (customText) customText.value = "";
+      renderLetterStrip();
+      modeButtons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
+      });
+      rebuild(false);
+    }
+
+    function setCustomText(value) {
+      const glyphs = textToGlyphs(value);
+      if (!glyphs.length) {
+        state.textMode = false;
+        state.customText = "";
+        setGlyphMode("hebrew");
+        return;
+      }
+      letters = glyphs;
+      state.index = 0;
+      state.textMode = true;
+      state.customText = value;
+      renderLetterStrip();
+      modeButtons.forEach((button) => {
+        button.setAttribute("aria-pressed", "false");
+      });
+      rebuild(false);
+    }
+
+    function setTheme(theme) {
+      state.theme = theme;
+      document.body.dataset.theme = theme;
+      themeButtons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.theme === theme));
+      });
+    }
+
+    toggle.addEventListener("click", () => {
+      state.playing = !state.playing;
+      toggle.textContent = state.playing ? "Ⅱ" : "▶";
+      if (state.playing) state.start = performance.now() - state.duration;
+    });
+
+    prev.addEventListener("click", () => go(-1));
+    next.addEventListener("click", () => go(1));
+
+    speed.addEventListener("input", () => {
+      speedOut.textContent = `${Number(speed.value).toFixed(1)}x`;
+    });
+
+    density.addEventListener("input", () => {
+      state.particleCount = Number(density.value);
+      densityOut.textContent = density.value;
+      rebuild(true);
+    });
+
+    sharpness.addEventListener("input", () => {
+      state.sharpness = Number(sharpness.value);
+      const value = state.sharpness;
+      sharpnessOut.textContent = value > 0.72 ? "קונטור" : value > 0.34 ? "רך" : "מטושטש";
+    });
+
+    dispersion.addEventListener("input", () => {
+      state.dispersion = Number(dispersion.value);
+      const value = state.dispersion;
+      dispersionOut.textContent = value > 0.68 ? "גבוה" : value > 0.28 ? "בינוני" : "נמוך";
+    });
+
+    lettersStrip.addEventListener("click", (event) => {
+      const target = event.target.closest("[data-index]");
+      if (!target) return;
+      const nextIndex = Number(target.dataset.index);
+      const offset = nextIndex - state.index;
+      if (offset !== 0) go(offset);
+    });
+
+    modeButtons.forEach((button) => {
+      button.addEventListener("click", () => setGlyphMode(button.dataset.mode));
+    });
+
+    customText.addEventListener("input", () => {
+      setCustomText(customText.value);
+    });
+
+    themeButtons.forEach((button) => {
+      button.addEventListener("click", () => setTheme(button.dataset.theme));
+    });
+
+    canvas.addEventListener("pointermove", (event) => {
+      const rect = canvas.getBoundingClientRect();
+      state.pointer = {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+      };
+    });
+
+    canvas.addEventListener("pointerleave", () => {
+      state.pointer = null;
+    });
+
+    window.addEventListener("resize", resize);
+
+    document.fonts.ready.then(() => {
+      setTheme("positive");
+      renderLetterStrip();
+      resize();
+      scheduleRender();
+    });
+  </script>
+</body>
+</html>
