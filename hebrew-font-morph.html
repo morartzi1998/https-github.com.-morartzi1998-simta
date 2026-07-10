@@ -192,6 +192,8 @@
       font-size: 18px;
       line-height: 1;
       letter-spacing: 0;
+      font-kerning: normal;
+      font-feature-settings: "kern" 1;
       white-space: nowrap;
       pointer-events: auto;
       scrollbar-width: none;
@@ -207,7 +209,7 @@
       width: auto;
       min-width: 0;
       height: auto;
-      padding: 0 1px 5px;
+      padding: 0 0 5px;
       line-height: 1;
       border-radius: 4px;
     }
@@ -252,25 +254,26 @@
       font-size: 12px;
     }
 
-    .type-panel input {
+    .type-panel textarea {
       width: 100%;
-      height: 38px;
+      height: 68px;
       border: 0;
       border-radius: 8px;
       background: rgba(255, 255, 255, 0.04);
       color: var(--ink);
-      padding: 0 12px;
-      font: 600 15px/1 ui-sans-serif, system-ui, sans-serif;
+      padding: 10px 12px;
+      font: 600 15px/1.35 ui-sans-serif, system-ui, sans-serif;
       outline: none;
+      resize: vertical;
     }
 
-    .type-panel input:focus {
+    .type-panel textarea:focus {
       background: rgba(255, 255, 255, 0.1);
       box-shadow: none;
     }
 
-    body[data-theme="negative"] .type-panel input,
-    body[data-theme="mono-positive"] .type-panel input {
+    body[data-theme="negative"] .type-panel textarea,
+    body[data-theme="mono-positive"] .type-panel textarea {
       background: rgba(17, 27, 90, 0.04);
     }
 
@@ -389,7 +392,7 @@
     </div>
     <div class="type-panel">
       <label for="customText">טקסט חופשי</label>
-      <input id="customText" type="text" value="" placeholder="כתוב כאן אותיות, מספרים או סימנים">
+      <textarea id="customText" placeholder="כתוב כאן אותיות, מספרים או סימנים"></textarea>
     </div>
     <div class="letters" id="letters" aria-hidden="true"></div>
     <div class="regular-glyph" id="regularGlyph" aria-hidden="true">א</div>
@@ -440,8 +443,8 @@
   <script>
     const glyphSets = {
       hebrew: ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "כ", "ל", "מ", "נ", "ס", "ע", "פ", "צ", "ק", "ר", "ש", "ת"],
-      numbers: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", ",", ":", ";", "?", "!", "+", "-", "־", "=", "/", "₪", "#", "'", "׳", "״", "(", ")", "[", "]"],
-      all: ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "כ", "ל", "מ", "נ", "ס", "ע", "פ", "צ", "ק", "ר", "ש", "ת", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", ",", ":", ";", "?", "!", "+", "-", "־", "=", "/", "₪", "#", "'", "׳", "״", "(", ")", "[", "]"]
+      numbers: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", ",", ":", ";", "?", "!", "+", "-", "־", "–", "—", "=", "/", "₪", "#", "\"", "'", "׳", "״", "‘", "’", "‚", "“", "”", "(", ")", "[", "]", "{", "}", "*", "_", "\\", "«", "»", "‹", "›", "•", "…", "·"],
+      all: ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "כ", "ל", "מ", "נ", "ס", "ע", "פ", "צ", "ק", "ר", "ש", "ת", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", ",", ":", ";", "?", "!", "+", "-", "־", "–", "—", "=", "/", "₪", "#", "\"", "'", "׳", "״", "‘", "’", "‚", "“", "”", "(", ")", "[", "]", "{", "}", "*", "_", "\\", "«", "»", "‹", "›", "•", "…", "·"]
     };
     let letters = glyphSets.hebrew;
     const canvas = document.getElementById("canvas");
@@ -617,8 +620,10 @@
       const height = offscreen.height;
       const cssWidth = width / state.dpr;
       const cssHeight = height / state.dpr;
-      const cleanText = text.trim();
+      const lines = text.split(/\n/).map((line) => line.trim()).filter(Boolean);
+      const textLines = lines.length ? lines : [text.trim()];
       const maxWidth = cssWidth * 0.78;
+      const maxHeight = cssHeight * 0.36;
       const baseFontSize = Math.min(cssWidth * 0.12, cssHeight * 0.26);
       let fontSize = baseFontSize;
 
@@ -631,14 +636,23 @@
       offctx.direction = "rtl";
       offctx.font = `${fontSize}px Simta, sans-serif`;
 
-      const measured = offctx.measureText(cleanText).width;
-      if (measured > maxWidth) {
-        fontSize = Math.max(34, fontSize * (maxWidth / measured));
+      const widest = Math.max(...textLines.map((line) => offctx.measureText(line).width));
+      const lineHeightRatio = 1.05;
+      const blockHeight = textLines.length * fontSize * lineHeightRatio;
+      const widthScale = widest > maxWidth ? maxWidth / widest : 1;
+      const heightScale = blockHeight > maxHeight ? maxHeight / blockHeight : 1;
+      const scale = Math.min(widthScale, heightScale);
+      if (scale < 1) {
+        fontSize = Math.max(24, fontSize * scale);
         offctx.font = `${fontSize}px Simta, sans-serif`;
       }
       state.textScale = Math.max(0.28, Math.min(1, fontSize / baseFontSize));
 
-      offctx.fillText(cleanText, cssWidth / 2, cssHeight * 0.54);
+      const lineHeight = fontSize * lineHeightRatio;
+      const startY = cssHeight * 0.54 - ((textLines.length - 1) * lineHeight) / 2;
+      textLines.forEach((line, index) => {
+        offctx.fillText(line, cssWidth / 2, startY + index * lineHeight);
+      });
       offctx.direction = "inherit";
 
       const data = offctx.getImageData(0, 0, width, height).data;
