@@ -7,7 +7,10 @@
   <style>
     @font-face {
       font-family: "Simta";
-      src: url("./simta3-simta.otf") format("opentype");
+      src:
+        url("./simta3-simta.woff2") format("woff2"),
+        url("./simta3-simta.woff") format("woff"),
+        url("./simta3-simta.otf") format("opentype");
       font-display: block;
     }
 
@@ -20,6 +23,8 @@
       --accent: #fffaf0;
       --accent-2: #fffaf0;
       --panel: rgba(12, 22, 82, 0.88);
+      --strip-tracking: -0.174em;
+      --type-tracking: -0.084em;
     }
 
     body[data-theme="negative"] {
@@ -117,7 +122,7 @@
 
     .controls {
       display: grid;
-      grid-template-columns: repeat(3, auto) repeat(4, minmax(112px, 172px)) minmax(250px, auto) minmax(170px, 1fr) auto;
+      grid-template-columns: repeat(3, auto) repeat(5, minmax(104px, 160px)) minmax(250px, auto) minmax(170px, 1fr) auto;
       align-items: center;
       gap: 12px;
       padding: 14px;
@@ -178,7 +183,7 @@
 
     .letters {
       position: absolute;
-      inset: 168px 32px auto 32px;
+      inset: 188px 32px auto 32px;
       z-index: 2;
       display: flex;
       justify-content: flex-start;
@@ -212,6 +217,20 @@
       padding: 0 0 5px;
       line-height: 1;
       border-radius: 4px;
+    }
+
+    .letters span + span {
+      margin-inline-start: var(--strip-tracking);
+    }
+
+    .letters span.is-punctuation + span,
+    .letters span + span.is-punctuation {
+      margin-inline-start: calc(var(--strip-tracking) * 1.35);
+    }
+
+    .letters span.is-quote + span,
+    .letters span + span.is-quote {
+      margin-inline-start: calc(var(--strip-tracking) * 1.7);
     }
 
     .letters .active {
@@ -262,9 +281,14 @@
       background: rgba(255, 255, 255, 0.04);
       color: var(--ink);
       padding: 10px 12px;
-      font: 600 15px/1.35 ui-sans-serif, system-ui, sans-serif;
+      font: 400 clamp(22px, 2.7vw, 42px)/1.18 "Simta", ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: var(--type-tracking);
+      font-kerning: normal;
+      font-feature-settings: "kern" 1;
       outline: none;
       resize: vertical;
+      direction: rtl;
+      text-align: right;
     }
 
     .type-panel textarea:focus {
@@ -358,7 +382,7 @@
       }
 
       .letters {
-        inset: 166px 18px auto 18px;
+        inset: 188px 18px auto 18px;
       }
 
       .type-panel {
@@ -424,6 +448,11 @@
       <input id="dispersion" type="range" min="0" max="1" step="0.01" value="0.16">
     </div>
 
+    <div class="control">
+      <label for="tracking"><span>ריווח</span><output id="trackingOut">צפוף</output></label>
+      <input id="tracking" type="range" min="-0.28" max="0.08" step="0.01" value="-0.12">
+    </div>
+
     <div class="mode" aria-label="בחירת סט גליפים">
       <button class="modeButton" type="button" data-mode="hebrew" aria-pressed="true">עברית</button>
       <button class="modeButton" type="button" data-mode="numbers" aria-pressed="false">מספרים</button>
@@ -459,6 +488,8 @@
     const sharpnessOut = document.getElementById("sharpnessOut");
     const dispersion = document.getElementById("dispersion");
     const dispersionOut = document.getElementById("dispersionOut");
+    const tracking = document.getElementById("tracking");
+    const trackingOut = document.getElementById("trackingOut");
     const toggle = document.getElementById("toggle");
     const prev = document.getElementById("prev");
     const next = document.getElementById("next");
@@ -530,6 +561,7 @@
       particleCount: Number(density.value),
       sharpness: Number(sharpness.value),
       dispersion: Number(dispersion.value),
+      tracking: Number(tracking.value),
       pointer: null,
       dpr: 1,
       theme: "positive",
@@ -543,7 +575,28 @@
     };
 
     function renderLetterStrip() {
-      lettersStrip.innerHTML = letters.map((letter, index) => `<span data-index="${index}">${letter}</span>`).join("");
+      lettersStrip.innerHTML = letters.map((letter, index) => {
+        const classes = ["letter-token"];
+        if (isPunctuation(letter)) classes.push("is-punctuation");
+        if (isQuote(letter)) classes.push("is-quote");
+        return `<span class="${classes.join(" ")}" data-index="${index}">${escapeHTML(letter)}</span>`;
+      }).join("");
+    }
+
+    function escapeHTML(value) {
+      return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function isPunctuation(char) {
+      return /[.,:;?!+\-־–—=\/₪#"'׳״‘’‚“”()[\]{}*_\\«»‹›•…·]/u.test(char);
+    }
+
+    function isQuote(char) {
+      return /["'׳״‘’‚“”]/u.test(char);
     }
 
     function textToGlyphs(value) {
@@ -635,8 +688,9 @@
       offctx.textBaseline = "middle";
       offctx.direction = "rtl";
       offctx.font = `${fontSize}px Simta, sans-serif`;
+      offctx.letterSpacing = `${fontSize * state.tracking}px`;
 
-      const widest = Math.max(...textLines.map((line) => offctx.measureText(line).width));
+      const widest = Math.max(...textLines.map((line) => measureLine(line, fontSize)));
       const lineHeightRatio = 1.05;
       const blockHeight = textLines.length * fontSize * lineHeightRatio;
       const widthScale = widest > maxWidth ? maxWidth / widest : 1;
@@ -645,6 +699,7 @@
       if (scale < 1) {
         fontSize = Math.max(24, fontSize * scale);
         offctx.font = `${fontSize}px Simta, sans-serif`;
+        offctx.letterSpacing = `${fontSize * state.tracking}px`;
       }
       state.textScale = Math.max(0.28, Math.min(1, fontSize / baseFontSize));
 
@@ -653,6 +708,7 @@
       textLines.forEach((line, index) => {
         offctx.fillText(line, cssWidth / 2, startY + index * lineHeight);
       });
+      offctx.letterSpacing = "0px";
       offctx.direction = "inherit";
 
       const data = offctx.getImageData(0, 0, width, height).data;
@@ -672,6 +728,12 @@
         }
       }
       return normalizePoints(points, textParticleCount, 0.75);
+    }
+
+    function measureLine(line, fontSize) {
+      const baseWidth = offctx.measureText(line).width;
+      const chars = [...line].length;
+      return Math.max(0, baseWidth + Math.max(0, chars - 1) * fontSize * state.tracking);
     }
 
     function normalizePoints(points, count, jitter = 2.3) {
@@ -923,6 +985,14 @@
       state.dispersion = Number(dispersion.value);
       const value = state.dispersion;
       dispersionOut.textContent = value > 0.68 ? "גבוה" : value > 0.28 ? "בינוני" : "נמוך";
+    });
+
+    tracking.addEventListener("input", () => {
+      state.tracking = Number(tracking.value);
+      document.documentElement.style.setProperty("--strip-tracking", `${state.tracking * 1.45}em`);
+      document.documentElement.style.setProperty("--type-tracking", `${state.tracking * 0.7}em`);
+      trackingOut.textContent = state.tracking < -0.18 ? "מאוד צפוף" : state.tracking < -0.04 ? "צפוף" : state.tracking < 0.03 ? "רגיל" : "פתוח";
+      rebuild(true);
     });
 
     lettersStrip.addEventListener("click", (event) => {
