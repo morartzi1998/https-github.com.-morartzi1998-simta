@@ -152,9 +152,9 @@
       right: 0;
       bottom: calc(100% - 1px);
       display: grid;
-      grid-template-columns: minmax(260px, 1.15fr) minmax(260px, 1fr) minmax(420px, 2fr);
-      align-items: start;
-      gap: 16px;
+      grid-template-columns: minmax(190px, 0.34fr) minmax(360px, 1fr);
+      align-items: stretch;
+      gap: 14px;
       padding: 16px 14px 14px;
       background: var(--panel);
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -215,10 +215,14 @@
     }
 
     .control-section {
-      display: grid;
+      display: none;
       gap: 10px;
       min-width: 0;
       align-content: start;
+    }
+
+    .control-section[data-active="true"] {
+      display: grid;
     }
 
     .control-section h2 {
@@ -232,6 +236,31 @@
       display: grid;
       grid-template-columns: repeat(2, minmax(120px, 1fr));
       gap: 12px;
+    }
+
+    .drawer-tabs {
+      display: grid;
+      align-content: start;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .drawer-tab {
+      width: 100%;
+      height: 40px;
+      justify-content: end;
+      padding: 0 12px;
+      text-align: right;
+      font-size: 12px;
+    }
+
+    .drawer-tab[aria-selected="true"] {
+      background: var(--accent-2);
+      color: var(--bg);
+    }
+
+    .drawer-panels {
+      min-width: 0;
     }
 
     label {
@@ -448,6 +477,15 @@
         overflow-y: auto;
       }
 
+      .drawer-tabs {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .drawer-tab {
+        justify-content: center;
+        padding: 0 8px;
+      }
+
       .slider-grid {
         grid-template-columns: 1fr;
       }
@@ -509,59 +547,67 @@
     </div>
 
     <div class="controls-drawer" id="controlsDrawer">
-      <section class="control-section" aria-label="צבעוניות">
-        <h2>צבעוניות</h2>
-        <div class="theme">
-          <button class="themeButton" type="button" data-theme="positive" aria-pressed="true">פוזיטיב</button>
-          <button class="themeButton" type="button" data-theme="negative" aria-pressed="false">נגטיב</button>
-          <button class="themeButton" type="button" data-theme="mono-positive" aria-pressed="false">ש/ל</button>
-          <button class="themeButton" type="button" data-theme="mono-negative" aria-pressed="false">נגטיב ש/ל</button>
-        </div>
-      </section>
+      <div class="drawer-tabs" role="tablist" aria-label="תפריט בקרות">
+        <button class="drawer-tab" type="button" role="tab" data-tab="sliders" aria-selected="true">סליידרים</button>
+        <button class="drawer-tab" type="button" role="tab" data-tab="glyphs" aria-selected="false">סט תווים</button>
+        <button class="drawer-tab" type="button" role="tab" data-tab="theme" aria-selected="false">צבעוניות</button>
+      </div>
 
-      <section class="control-section" aria-label="סט תווים">
-        <h2>סט תווים</h2>
-        <div class="mode">
-          <button class="modeButton" type="button" data-mode="hebrew" aria-pressed="false">עברית</button>
-          <button class="modeButton" type="button" data-mode="numbers" aria-pressed="false">מספרים</button>
-          <button class="modeButton" type="button" data-mode="all" aria-pressed="true">הכל</button>
-        </div>
-      </section>
+      <div class="drawer-panels">
+        <section class="control-section" data-panel="sliders" data-active="true" aria-label="סליידרים">
+          <h2>סליידרים</h2>
+          <div class="slider-grid">
+            <div class="control">
+              <label for="speed"><span>קצב</span><output id="speedOut">1.0x</output></label>
+              <input id="speed" type="range" min="0.45" max="2.4" step="0.05" value="1">
+            </div>
 
-      <section class="control-section" aria-label="סליידרים">
-        <h2>סליידרים</h2>
-        <div class="slider-grid">
-          <div class="control">
-            <label for="speed"><span>קצב</span><output id="speedOut">1.0x</output></label>
-            <input id="speed" type="range" min="0.45" max="2.4" step="0.05" value="1">
+            <div class="control">
+              <label for="density"><span>צפיפות</span><output id="densityOut">12000</output></label>
+              <input id="density" type="range" min="2500" max="32000" step="500" value="12000">
+            </div>
+
+            <div class="control">
+              <label for="sharpness"><span>חדות</span><output id="sharpnessOut">קונטור</output></label>
+              <input id="sharpness" type="range" min="0" max="1" step="0.01" value="0.88">
+            </div>
+
+            <div class="control">
+              <label for="dispersion"><span>פיזור</span><output id="dispersionOut">נמוך</output></label>
+              <input id="dispersion" type="range" min="0" max="1" step="0.01" value="0.16">
+            </div>
+
+            <div class="control">
+              <label for="tracking"><span>ריווח</span><output id="trackingOut">רגיל</output></label>
+              <input id="tracking" type="range" min="-0.12" max="0.14" step="0.01" value="0.01">
+            </div>
+
+            <div class="control">
+              <label for="depth"><span>עומק</span><output id="depthOut">בינוני</output></label>
+              <input id="depth" type="range" min="0" max="1" step="0.01" value="0.42">
+            </div>
           </div>
+        </section>
 
-          <div class="control">
-            <label for="density"><span>צפיפות</span><output id="densityOut">12000</output></label>
-            <input id="density" type="range" min="2500" max="32000" step="500" value="12000">
+        <section class="control-section" data-panel="glyphs" data-active="false" aria-label="סט תווים">
+          <h2>סט תווים</h2>
+          <div class="mode">
+            <button class="modeButton" type="button" data-mode="hebrew" aria-pressed="false">עברית</button>
+            <button class="modeButton" type="button" data-mode="numbers" aria-pressed="false">מספרים</button>
+            <button class="modeButton" type="button" data-mode="all" aria-pressed="true">הכל</button>
           </div>
+        </section>
 
-          <div class="control">
-            <label for="sharpness"><span>חדות</span><output id="sharpnessOut">קונטור</output></label>
-            <input id="sharpness" type="range" min="0" max="1" step="0.01" value="0.88">
+        <section class="control-section" data-panel="theme" data-active="false" aria-label="צבעוניות">
+          <h2>צבעוניות</h2>
+          <div class="theme">
+            <button class="themeButton" type="button" data-theme="positive" aria-pressed="true">פוזיטיב</button>
+            <button class="themeButton" type="button" data-theme="negative" aria-pressed="false">נגטיב</button>
+            <button class="themeButton" type="button" data-theme="mono-positive" aria-pressed="false">ש/ל</button>
+            <button class="themeButton" type="button" data-theme="mono-negative" aria-pressed="false">נגטיב ש/ל</button>
           </div>
-
-          <div class="control">
-            <label for="dispersion"><span>פיזור</span><output id="dispersionOut">נמוך</output></label>
-            <input id="dispersion" type="range" min="0" max="1" step="0.01" value="0.16">
-          </div>
-
-          <div class="control">
-            <label for="tracking"><span>ריווח</span><output id="trackingOut">רגיל</output></label>
-            <input id="tracking" type="range" min="-0.12" max="0.14" step="0.01" value="0.01">
-          </div>
-
-          <div class="control">
-            <label for="depth"><span>עומק</span><output id="depthOut">בינוני</output></label>
-            <input id="depth" type="range" min="0" max="1" step="0.01" value="0.42">
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
 
     <div class="status" id="fpsStatus">100 fps target</div>
@@ -578,6 +624,8 @@
     const ctx = canvas.getContext("2d", { alpha: false });
     const controls = document.getElementById("controls");
     const menuToggle = document.getElementById("menuToggle");
+    const drawerTabs = [...document.querySelectorAll(".drawer-tab")];
+    const drawerPanels = [...document.querySelectorAll("[data-panel]")];
     const lettersStrip = document.getElementById("letters");
     const regularGlyph = document.getElementById("regularGlyph");
     const speed = document.getElementById("speed");
@@ -1146,6 +1194,15 @@
       menuToggle.textContent = open ? "×" : "☰";
     }
 
+    function setDrawerTab(tab) {
+      drawerTabs.forEach((button) => {
+        button.setAttribute("aria-selected", String(button.dataset.tab === tab));
+      });
+      drawerPanels.forEach((panel) => {
+        panel.dataset.active = String(panel.dataset.panel === tab);
+      });
+    }
+
     toggle.addEventListener("click", () => {
       state.playing = !state.playing;
       toggle.textContent = state.playing ? "Ⅱ" : "▶";
@@ -1201,6 +1258,10 @@
 
     menuToggle.addEventListener("click", () => {
       setMenuOpen(controls.dataset.open !== "true");
+    });
+
+    drawerTabs.forEach((button) => {
+      button.addEventListener("click", () => setDrawerTab(button.dataset.tab));
     });
 
     lettersStrip.addEventListener("click", (event) => {
