@@ -126,7 +126,7 @@
 
     .controls {
       display: grid;
-      grid-template-columns: repeat(4, auto) repeat(6, minmax(96px, 148px)) minmax(250px, auto) minmax(170px, 1fr) auto;
+      grid-template-columns: repeat(5, auto) repeat(6, minmax(96px, 148px)) minmax(250px, auto) minmax(170px, 1fr) auto;
       align-items: center;
       gap: 12px;
       padding: 14px;
@@ -423,6 +423,7 @@
     <button id="toggle" type="button" title="עצירה או ניגון" aria-label="עצירה או ניגון">Ⅱ</button>
     <button id="prev" type="button" title="האות הקודמת" aria-label="האות הקודמת">‹</button>
     <button id="rotateToggle" type="button" title="סיבוב במרחב" aria-label="סיבוב במרחב">⟳</button>
+    <button id="resetRotation" type="button" title="איפוס זווית" aria-label="איפוס זווית">↺</button>
 
     <div class="control">
       <label for="speed"><span>קצב</span><output id="speedOut">1.0x</output></label>
@@ -473,8 +474,8 @@
   <script>
     const glyphSets = {
       hebrew: ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "כ", "ל", "מ", "נ", "ס", "ע", "פ", "צ", "ק", "ר", "ש", "ת"],
-      numbers: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", ",", ":", ";", "?", "!", "+", "-", "־", "=", "/", "₪", "#", "׳", "״", "(", ")"],
-      all: ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "כ", "ל", "מ", "נ", "ס", "ע", "פ", "צ", "ק", "ר", "ש", "ת", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", ",", ":", ";", "?", "!", "+", "-", "־", "=", "/", "₪", "#", "׳", "״", "(", ")"]
+      numbers: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", ",", ":", ";", "?", "!", "+", "-", "־", "=", "/", "₪", "#", "(", ")"],
+      all: ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "כ", "ל", "מ", "נ", "ס", "ע", "פ", "צ", "ק", "ר", "ש", "ת", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", ",", ":", ";", "?", "!", "+", "-", "־", "=", "/", "₪", "#", "(", ")"]
     };
     let letters = glyphSets.hebrew;
     const canvas = document.getElementById("canvas");
@@ -497,6 +498,7 @@
     const prev = document.getElementById("prev");
     const next = document.getElementById("next");
     const rotateToggle = document.getElementById("rotateToggle");
+    const resetRotation = document.getElementById("resetRotation");
     const fpsStatus = document.getElementById("fpsStatus");
     const customText = document.getElementById("customText");
     const modeButtons = [...document.querySelectorAll(".modeButton")];
@@ -603,15 +605,16 @@
     }
 
     function isPunctuation(char) {
-      return /[.,:;?!+\-־–—=\/₪#"'׳״‘’‚“”()[\]{}*_\\«»‹›•…·]/u.test(char);
+      return /[.,:;?!+\-־=\/₪#()]/u.test(char);
     }
 
     function isQuote(char) {
-      return /["'׳״‘’‚“”]/u.test(char);
+      return false;
     }
 
     function textToGlyphs(value) {
-      return [...value].filter((char) => char.trim().length > 0);
+      const supported = new Set(glyphSets.all);
+      return [...value].filter((char) => char.trim().length > 0 && supported.has(char));
     }
 
     function resize() {
@@ -1015,6 +1018,20 @@
       });
     }
 
+    function setRotateButton(active) {
+      rotateToggle.setAttribute("aria-pressed", String(active));
+      rotateToggle.style.background = active ? "var(--accent-2)" : "transparent";
+      rotateToggle.style.color = active ? "var(--bg)" : "var(--ink)";
+    }
+
+    function resetRotationView() {
+      state.autoRotate = false;
+      state.dragging = false;
+      state.rotationX = -0.08;
+      state.rotationY = 0.16;
+      setRotateButton(false);
+    }
+
     toggle.addEventListener("click", () => {
       state.playing = !state.playing;
       toggle.textContent = state.playing ? "Ⅱ" : "▶";
@@ -1061,9 +1078,11 @@
 
     rotateToggle.addEventListener("click", () => {
       state.autoRotate = !state.autoRotate;
-      rotateToggle.setAttribute("aria-pressed", String(state.autoRotate));
-      rotateToggle.style.background = state.autoRotate ? "var(--accent-2)" : "transparent";
-      rotateToggle.style.color = state.autoRotate ? "var(--bg)" : "var(--ink)";
+      setRotateButton(state.autoRotate);
+    });
+
+    resetRotation.addEventListener("click", () => {
+      resetRotationView();
     });
 
     lettersStrip.addEventListener("click", (event) => {
@@ -1096,9 +1115,7 @@
         x: event.clientX - rect.left,
         y: event.clientY - rect.top
       };
-      rotateToggle.setAttribute("aria-pressed", "false");
-      rotateToggle.style.background = "transparent";
-      rotateToggle.style.color = "var(--ink)";
+      setRotateButton(false);
       canvas.setPointerCapture(event.pointerId);
     });
 
@@ -1132,8 +1149,7 @@
     });
 
     canvas.addEventListener("dblclick", () => {
-      state.rotationX = -0.08;
-      state.rotationY = 0.16;
+      resetRotationView();
     });
 
     window.addEventListener("resize", resize);
