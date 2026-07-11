@@ -125,15 +125,50 @@
     }
 
     .controls {
-      display: grid;
-      grid-template-columns: repeat(5, auto) repeat(6, minmax(96px, 148px)) minmax(250px, auto) minmax(170px, 1fr) auto;
-      align-items: center;
-      gap: 12px;
-      padding: 14px;
+      position: relative;
+      z-index: 5;
+      display: block;
+      padding: 10px 14px;
       background: var(--panel);
       backdrop-filter: blur(18px);
       font-family: ui-sans-serif, system-ui, sans-serif;
       direction: rtl;
+    }
+
+    .quick-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .menu-toggle {
+      margin-inline-start: auto;
+    }
+
+    .controls-drawer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: calc(100% - 1px);
+      display: grid;
+      grid-template-columns: repeat(6, minmax(112px, 1fr)) minmax(250px, 1.2fr) minmax(170px, 1fr);
+      align-items: center;
+      gap: 12px;
+      padding: 16px 14px 14px;
+      background: var(--panel);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(18px);
+      transform: translateY(14px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .controls[data-open="true"] .controls-drawer {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
     }
 
     button {
@@ -162,6 +197,12 @@
 
     button:active {
       transform: translateY(0);
+    }
+
+    #rotateToggle {
+      width: 54px;
+      font-size: 13px;
+      letter-spacing: 0;
     }
 
     .control {
@@ -369,7 +410,20 @@
       }
 
       .controls {
-        grid-template-columns: repeat(3, 46px) 1fr;
+        padding: 8px 10px;
+      }
+
+      .quick-actions {
+        justify-content: flex-start;
+        gap: 6px;
+      }
+
+      .controls-drawer {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 12px 10px;
+        max-height: min(68vh, 520px);
+        overflow-y: auto;
       }
 
       .control {
@@ -418,54 +472,59 @@
     <canvas id="canvas" aria-label="פונט סימטה באנימציית גליפים"></canvas>
   </main>
 
-  <footer class="controls" aria-label="בקרות אנימציה">
-    <button id="next" type="button" title="האות הבאה" aria-label="האות הבאה">›</button>
-    <button id="toggle" type="button" title="עצירה או ניגון" aria-label="עצירה או ניגון">Ⅱ</button>
-    <button id="prev" type="button" title="האות הקודמת" aria-label="האות הקודמת">‹</button>
-    <button id="rotateToggle" type="button" title="סיבוב במרחב" aria-label="סיבוב במרחב">⟳</button>
-    <button id="resetRotation" type="button" title="איפוס זווית" aria-label="איפוס זווית">↺</button>
-
-    <div class="control">
-      <label for="speed"><span>קצב</span><output id="speedOut">1.0x</output></label>
-      <input id="speed" type="range" min="0.45" max="2.4" step="0.05" value="1">
+  <footer class="controls" id="controls" data-open="false" aria-label="בקרות אנימציה">
+    <div class="quick-actions">
+      <button id="menuToggle" class="menu-toggle" type="button" title="תפריט" aria-label="תפריט" aria-expanded="false">☰</button>
+      <button id="next" type="button" title="האות הבאה" aria-label="האות הבאה">›</button>
+      <button id="toggle" type="button" title="עצירה או ניגון" aria-label="עצירה או ניגון">Ⅱ</button>
+      <button id="prev" type="button" title="האות הקודמת" aria-label="האות הקודמת">‹</button>
+      <button id="rotateToggle" type="button" title="סיבוב 360 במרחב" aria-label="סיבוב 360 במרחב">360</button>
+      <button id="resetRotation" type="button" title="איפוס זווית" aria-label="איפוס זווית">↺</button>
     </div>
 
-    <div class="control">
-      <label for="density"><span>צפיפות</span><output id="densityOut">9000</output></label>
-      <input id="density" type="range" min="2500" max="18000" step="250" value="9000">
-    </div>
+    <div class="controls-drawer" id="controlsDrawer">
+      <div class="control">
+        <label for="speed"><span>קצב</span><output id="speedOut">1.0x</output></label>
+        <input id="speed" type="range" min="0.45" max="2.4" step="0.05" value="1">
+      </div>
 
-    <div class="control">
-      <label for="sharpness"><span>חדות</span><output id="sharpnessOut">קונטור</output></label>
-      <input id="sharpness" type="range" min="0" max="1" step="0.01" value="0.88">
-    </div>
+      <div class="control">
+        <label for="density"><span>צפיפות</span><output id="densityOut">9000</output></label>
+        <input id="density" type="range" min="2500" max="18000" step="250" value="9000">
+      </div>
 
-    <div class="control">
-      <label for="dispersion"><span>פיזור</span><output id="dispersionOut">נמוך</output></label>
-      <input id="dispersion" type="range" min="0" max="1" step="0.01" value="0.16">
-    </div>
+      <div class="control">
+        <label for="sharpness"><span>חדות</span><output id="sharpnessOut">קונטור</output></label>
+        <input id="sharpness" type="range" min="0" max="1" step="0.01" value="0.88">
+      </div>
 
-    <div class="control">
-      <label for="tracking"><span>ריווח</span><output id="trackingOut">רגיל</output></label>
-      <input id="tracking" type="range" min="-0.12" max="0.14" step="0.01" value="0.01">
-    </div>
+      <div class="control">
+        <label for="dispersion"><span>פיזור</span><output id="dispersionOut">נמוך</output></label>
+        <input id="dispersion" type="range" min="0" max="1" step="0.01" value="0.16">
+      </div>
 
-    <div class="control">
-      <label for="depth"><span>עומק</span><output id="depthOut">בינוני</output></label>
-      <input id="depth" type="range" min="0" max="1" step="0.01" value="0.42">
-    </div>
+      <div class="control">
+        <label for="tracking"><span>ריווח</span><output id="trackingOut">רגיל</output></label>
+        <input id="tracking" type="range" min="-0.12" max="0.14" step="0.01" value="0.01">
+      </div>
 
-    <div class="mode" aria-label="בחירת סט גליפים">
-      <button class="modeButton" type="button" data-mode="hebrew" aria-pressed="true">עברית</button>
-      <button class="modeButton" type="button" data-mode="numbers" aria-pressed="false">מספרים</button>
-      <button class="modeButton" type="button" data-mode="all" aria-pressed="false">הכל</button>
-    </div>
+      <div class="control">
+        <label for="depth"><span>עומק</span><output id="depthOut">בינוני</output></label>
+        <input id="depth" type="range" min="0" max="1" step="0.01" value="0.42">
+      </div>
 
-    <div class="theme" aria-label="בחירת צבעוניות">
-      <button class="themeButton" type="button" data-theme="positive" aria-pressed="true">פוזיטיב</button>
-      <button class="themeButton" type="button" data-theme="negative" aria-pressed="false">נגטיב</button>
-      <button class="themeButton" type="button" data-theme="mono-positive" aria-pressed="false">ש/ל</button>
-      <button class="themeButton" type="button" data-theme="mono-negative" aria-pressed="false">נגטיב ש/ל</button>
+      <div class="mode" aria-label="בחירת סט גליפים">
+        <button class="modeButton" type="button" data-mode="hebrew" aria-pressed="true">עברית</button>
+        <button class="modeButton" type="button" data-mode="numbers" aria-pressed="false">מספרים</button>
+        <button class="modeButton" type="button" data-mode="all" aria-pressed="false">הכל</button>
+      </div>
+
+      <div class="theme" aria-label="בחירת צבעוניות">
+        <button class="themeButton" type="button" data-theme="positive" aria-pressed="true">פוזיטיב</button>
+        <button class="themeButton" type="button" data-theme="negative" aria-pressed="false">נגטיב</button>
+        <button class="themeButton" type="button" data-theme="mono-positive" aria-pressed="false">ש/ל</button>
+        <button class="themeButton" type="button" data-theme="mono-negative" aria-pressed="false">נגטיב ש/ל</button>
+      </div>
     </div>
 
     <div class="status" id="fpsStatus">100 fps target</div>
@@ -480,6 +539,8 @@
     let letters = glyphSets.hebrew;
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d", { alpha: false });
+    const controls = document.getElementById("controls");
+    const menuToggle = document.getElementById("menuToggle");
     const lettersStrip = document.getElementById("letters");
     const regularGlyph = document.getElementById("regularGlyph");
     const speed = document.getElementById("speed");
@@ -1042,6 +1103,12 @@
       setRotateButton(false);
     }
 
+    function setMenuOpen(open) {
+      controls.dataset.open = String(open);
+      menuToggle.setAttribute("aria-expanded", String(open));
+      menuToggle.textContent = open ? "×" : "☰";
+    }
+
     toggle.addEventListener("click", () => {
       state.playing = !state.playing;
       toggle.textContent = state.playing ? "Ⅱ" : "▶";
@@ -1093,6 +1160,10 @@
 
     resetRotation.addEventListener("click", () => {
       resetRotationView();
+    });
+
+    menuToggle.addEventListener("click", () => {
+      setMenuOpen(controls.dataset.open !== "true");
     });
 
     lettersStrip.addEventListener("click", (event) => {
