@@ -617,6 +617,15 @@
       return [...value].filter((char) => char.trim().length > 0 && supported.has(char));
     }
 
+    function textToSupportedText(value) {
+      const supported = new Set(glyphSets.all);
+      return value
+        .split(/\n/)
+        .map((line) => [...line].filter((char) => char === " " || supported.has(char)).join("").replace(/\s+/g, " ").trim())
+        .filter(Boolean)
+        .join("\n");
+    }
+
     function resize() {
       state.dpr = Math.min(window.devicePixelRatio || 1, 2);
       const rect = canvas.getBoundingClientRect();
@@ -992,7 +1001,8 @@
     }
 
     function setCustomText(value) {
-      const glyphs = textToGlyphs(value);
+      const supportedText = textToSupportedText(value);
+      const glyphs = textToGlyphs(supportedText);
       if (!glyphs.length) {
         state.textMode = false;
         state.customText = "";
@@ -1002,7 +1012,7 @@
       letters = glyphs;
       state.index = 0;
       state.textMode = true;
-      state.customText = value;
+      state.customText = supportedText;
       renderLetterStrip();
       modeButtons.forEach((button) => {
         button.setAttribute("aria-pressed", "false");
