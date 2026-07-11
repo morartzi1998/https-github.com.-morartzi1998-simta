@@ -590,8 +590,8 @@
             </div>
 
             <div class="control">
-              <label for="density"><span>צפיפות</span><output id="densityOut">8000</output></label>
-              <input id="density" type="range" min="2500" max="32000" step="500" value="8000">
+              <label for="density"><span>צפיפות</span><output id="densityOut">5000</output></label>
+              <input id="density" type="range" min="1000" max="32000" step="500" value="5000">
             </div>
 
             <div class="control">
@@ -754,7 +754,7 @@
       grain: [],
       scratches: [],
       textScale: 1,
-      targetFrameMs: 10,
+      targetFrameMs: 16,
       lastPaint: 0,
       fpsLast: performance.now(),
       fpsFrames: 0
@@ -804,12 +804,18 @@
     }
 
     function effectiveParticleCount(multiplier = 1) {
-      const cap = isCompactViewport() ? 6500 : 32000;
+      const cap = isCompactViewport() ? 1600 : 32000;
       return Math.min(cap, Math.round(state.particleCount * multiplier));
     }
 
     function resize() {
+      const compact = isCompactViewport();
       state.dpr = isCompactViewport() ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+      state.targetFrameMs = compact ? 50 : 16;
+      if (compact && state.playing) {
+        state.playing = false;
+        toggle.textContent = "▶";
+      }
       const rect = canvas.getBoundingClientRect();
       canvas.width = Math.max(1, Math.floor(rect.width * state.dpr));
       canvas.height = Math.max(1, Math.floor(rect.height * state.dpr));
@@ -824,7 +830,7 @@
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
       const compact = isCompactViewport();
-      const count = Math.round((width * height) / (compact ? 1800 : 620));
+      const count = Math.round((width * height) / (compact ? 4200 : 620));
       state.grain = Array.from({ length: count }, () => ({
         x: Math.random() * width,
         y: Math.random() * height,
@@ -832,7 +838,7 @@
         a: 0.1 + Math.random() * 0.34,
         type: Math.random() > 0.68 ? "b" : "a"
       }));
-      state.scratches = Array.from({ length: Math.round((width * height) / (compact ? 32000 : 11500)) }, () => ({
+      state.scratches = Array.from({ length: Math.round((width * height) / (compact ? 90000 : 11500)) }, () => ({
         x: Math.random() * width,
         y: Math.random() * height,
         len: 10 + Math.random() * 80,
@@ -1092,6 +1098,7 @@
       ctx.globalCompositeOperation = theme.composite;
       ctx.shadowBlur = compactViewport ? 0 : shapeSoftness * 10;
       ctx.shadowColor = theme.particle;
+      const projection = projectionParams(width, height);
       for (const p of state.particles) {
         const wave = Math.sin(now * 0.003 + p.phase) * (1 - e) * 26;
         const targetX = p.tx + p.fuzzX * contourFuzz;
@@ -1102,11 +1109,11 @@
         p.y = p.sy + (targetY - p.sy) * e + Math.sin(p.phase * 1.3) * wave + scatterY * e;
         p.z = (p.sz || 0) + ((p.tz || 0) - (p.sz || 0)) * e;
 
-        const projected = projectParticle(p, width, height);
+        const projected = projectParticle(p, projection);
         let drawX = projected.x;
         let drawY = projected.y;
 
-        if (pointer) {
+        if (pointer && !compactViewport) {
           const dx = drawX - pointer.x;
           const dy = drawY - pointer.y;
           const dist = Math.hypot(dx, dy);
@@ -1119,7 +1126,8 @@
 
         ctx.fillStyle = p.tint === "cool" ? theme.particleSoft : theme.particle;
         ctx.globalAlpha = projected.alpha;
-        const size = p.baseSize * particleSizeBoost * projected.scale;
+        const mobileBoost = compactViewport ? 2.35 : 1;
+        const size = p.baseSize * particleSizeBoost * projected.scale * mobileBoost;
         ctx.fillRect(drawX - size / 2, drawY - size / 2, size, size);
       }
       ctx.restore();
@@ -1140,22 +1148,31 @@
       scheduleRender();
     }
 
-    function projectParticle(p, width, height) {
+    function projectionParams(width, height) {
       const centerX = width / 2;
       const centerY = height * (state.textMode ? 0.54 : 0.62);
       const depthAmount = state.depth * Math.min(width, height) * (isCompactViewport() ? 0.18 : 0.52);
+      return {
+        centerX,
+        centerY,
+        depthAmount,
+        cosY: Math.cos(state.rotationY),
+        sinY: Math.sin(state.rotationY),
+        cosX: Math.cos(state.rotationX),
+        sinX: Math.sin(state.rotationX),
+        focal: Math.max(width, height) * 0.9
+      };
+    }
+
+    function projectParticle(p, projection) {
+      const { centerX, centerY, depthAmount, cosY, sinY, cosX, sinX, focal } = projection;
       const x = p.x - centerX;
       const y = p.y - centerY;
       const z = (p.z / 90) * depthAmount;
-      const cosY = Math.cos(state.rotationY);
-      const sinY = Math.sin(state.rotationY);
-      const cosX = Math.cos(state.rotationX);
-      const sinX = Math.sin(state.rotationX);
       const xY = x * cosY + z * sinY;
       const zY = z * cosY - x * sinY;
       const yX = y * cosX - zY * sinX;
       const zX = zY * cosX + y * sinX;
-      const focal = Math.max(width, height) * 0.9;
       const scale = Math.max(0.28, Math.min(2.3, focal / (focal + zX)));
       return {
         x: centerX + xY * scale,
