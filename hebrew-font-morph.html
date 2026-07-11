@@ -522,11 +522,11 @@
       }
 
       .letters {
-        inset: 188px 18px auto 18px;
+        display: none;
       }
 
       .type-panel {
-        top: 98px;
+        top: 118px;
         right: 18px;
         left: 18px;
       }
@@ -590,8 +590,8 @@
             </div>
 
             <div class="control">
-              <label for="density"><span>צפיפות</span><output id="densityOut">12000</output></label>
-              <input id="density" type="range" min="2500" max="32000" step="500" value="12000">
+              <label for="density"><span>צפיפות</span><output id="densityOut">8000</output></label>
+              <input id="density" type="range" min="2500" max="32000" step="500" value="8000">
             </div>
 
             <div class="control">
@@ -610,8 +610,8 @@
             </div>
 
             <div class="control">
-              <label for="depth"><span>עומק</span><output id="depthOut">בינוני</output></label>
-              <input id="depth" type="range" min="0" max="1" step="0.01" value="0.42">
+              <label for="depth"><span>עומק</span><output id="depthOut">שטוח</output></label>
+              <input id="depth" type="range" min="0" max="1" step="0.01" value="0.12">
             </div>
           </div>
         </section>
@@ -742,8 +742,8 @@
       dispersion: Number(dispersion.value),
       tracking: Number(tracking.value),
       depth: Number(depth.value),
-      rotationX: -0.08,
-      rotationY: 0.16,
+      rotationX: 0,
+      rotationY: 0,
       autoRotate: false,
       dragging: false,
       dragX: 0,
@@ -799,8 +799,17 @@
         .join("\n");
     }
 
+    function isCompactViewport() {
+      return window.matchMedia("(max-width: 760px), (pointer: coarse)").matches;
+    }
+
+    function effectiveParticleCount(multiplier = 1) {
+      const cap = isCompactViewport() ? 6500 : 32000;
+      return Math.min(cap, Math.round(state.particleCount * multiplier));
+    }
+
     function resize() {
-      state.dpr = Math.min(window.devicePixelRatio || 1, 2);
+      state.dpr = isCompactViewport() ? 1 : Math.min(window.devicePixelRatio || 1, 2);
       const rect = canvas.getBoundingClientRect();
       canvas.width = Math.max(1, Math.floor(rect.width * state.dpr));
       canvas.height = Math.max(1, Math.floor(rect.height * state.dpr));
@@ -814,7 +823,8 @@
     function buildGrain() {
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
-      const count = Math.round((width * height) / 620);
+      const compact = isCompactViewport();
+      const count = Math.round((width * height) / (compact ? 1800 : 620));
       state.grain = Array.from({ length: count }, () => ({
         x: Math.random() * width,
         y: Math.random() * height,
@@ -822,7 +832,7 @@
         a: 0.1 + Math.random() * 0.34,
         type: Math.random() > 0.68 ? "b" : "a"
       }));
-      state.scratches = Array.from({ length: Math.round((width * height) / 11500) }, () => ({
+      state.scratches = Array.from({ length: Math.round((width * height) / (compact ? 32000 : 11500)) }, () => ({
         x: Math.random() * width,
         y: Math.random() * height,
         len: 10 + Math.random() * 80,
@@ -837,6 +847,7 @@
       const cssWidth = width / state.dpr;
       const cssHeight = height / state.dpr;
       const fontSize = Math.min(cssWidth * 0.58, cssHeight * 0.72);
+      const count = effectiveParticleCount();
 
       offctx.setTransform(1, 0, 0, 1, 0, 0);
       offctx.clearRect(0, 0, width, height);
@@ -849,7 +860,7 @@
 
       const data = offctx.getImageData(0, 0, width, height).data;
       const points = [];
-      const stride = Math.max(3, Math.floor(Math.sqrt((width * height) / (state.particleCount * 80))));
+      const stride = Math.max(3, Math.floor(Math.sqrt((width * height) / (count * 80))));
       for (let y = 0; y < height; y += stride) {
         for (let x = 0; x < width; x += stride) {
           const alpha = data[(y * width + x) * 4 + 3];
@@ -861,7 +872,7 @@
           }
         }
       }
-      return normalizePoints(points, state.particleCount);
+      return normalizePoints(points, count);
     }
 
     function sampleTextLine(text) {
@@ -910,7 +921,7 @@
       const data = offctx.getImageData(0, 0, width, height).data;
       const points = [];
       const compactBoost = 1 + (1 - state.textScale) * 2.7;
-      const textParticleCount = Math.min(32000, Math.round(state.particleCount * compactBoost));
+      const textParticleCount = effectiveParticleCount(compactBoost);
       const stride = Math.max(1, Math.floor(Math.sqrt((width * height) / (textParticleCount * 115))));
       for (let y = 0; y < height; y += stride) {
         for (let x = 0; x < width; x += stride) {
@@ -1071,6 +1082,7 @@
       const particleSizeBoost = state.textMode ? Math.max(0.46, 0.72 - compactness * 0.22) : 1 + shapeSoftness * 1.55;
       const contourFuzz = shapeSoftness * (state.textMode ? 5 : 18);
       const scatter = effectiveDispersion * Math.min(width, height) * 0.18;
+      const compactViewport = isCompactViewport();
       if (state.autoRotate && !state.dragging) {
         state.rotationY += frameDelta * 0.00075;
         state.rotationX = Math.sin(now * 0.00045) * 0.26;
@@ -1078,7 +1090,7 @@
 
       ctx.save();
       ctx.globalCompositeOperation = theme.composite;
-      ctx.shadowBlur = shapeSoftness * 10;
+      ctx.shadowBlur = compactViewport ? 0 : shapeSoftness * 10;
       ctx.shadowColor = theme.particle;
       for (const p of state.particles) {
         const wave = Math.sin(now * 0.003 + p.phase) * (1 - e) * 26;
@@ -1131,7 +1143,7 @@
     function projectParticle(p, width, height) {
       const centerX = width / 2;
       const centerY = height * (state.textMode ? 0.54 : 0.62);
-      const depthAmount = state.depth * Math.min(width, height) * 0.52;
+      const depthAmount = state.depth * Math.min(width, height) * (isCompactViewport() ? 0.18 : 0.52);
       const x = p.x - centerX;
       const y = p.y - centerY;
       const z = (p.z / 90) * depthAmount;
@@ -1210,8 +1222,8 @@
     function resetRotationView() {
       state.autoRotate = false;
       state.dragging = false;
-      state.rotationX = -0.08;
-      state.rotationY = 0.16;
+      state.rotationX = 0;
+      state.rotationY = 0;
       setRotateButton(false);
     }
 
