@@ -804,7 +804,7 @@
     }
 
     function effectiveParticleCount(multiplier = 1) {
-      const cap = isCompactViewport() ? 1600 : 32000;
+      const cap = isCompactViewport() ? 2800 : 32000;
       return Math.min(cap, Math.round(state.particleCount * multiplier));
     }
 
@@ -987,7 +987,7 @@
           tx: target.x,
           ty: target.y,
           tz: particleDepth(i),
-          baseSize: 0.85 + Math.random() * 1.7,
+          baseSize: 0.72 + Math.random() * 1.28,
           phase: Math.random() * Math.PI * 2,
           fuzzX: (Math.random() - 0.5) * 2,
           fuzzY: (Math.random() - 0.5) * 2,
@@ -1126,7 +1126,7 @@
 
         ctx.fillStyle = p.tint === "cool" ? theme.particleSoft : theme.particle;
         ctx.globalAlpha = projected.alpha;
-        const mobileBoost = compactViewport ? 2.35 : 1;
+        const mobileBoost = compactViewport ? 1.18 : 1;
         const size = p.baseSize * particleSizeBoost * projected.scale * mobileBoost;
         ctx.fillRect(drawX - size / 2, drawY - size / 2, size, size);
       }
