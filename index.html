@@ -483,6 +483,8 @@
       }
 
       .controls {
+        position: sticky;
+        bottom: 0;
         padding: 8px 10px;
       }
 
@@ -492,11 +494,15 @@
       }
 
       .controls-drawer {
+        position: fixed;
+        right: 0;
+        left: 0;
+        bottom: 62px;
         grid-template-columns: 1fr;
         width: 100vw;
         gap: 10px;
         padding: 12px 10px;
-        max-height: min(68vh, 520px);
+        max-height: min(74dvh, 560px);
         overflow-y: auto;
       }
 
@@ -811,11 +817,7 @@
     function resize() {
       const compact = isCompactViewport();
       state.dpr = isCompactViewport() ? 1 : Math.min(window.devicePixelRatio || 1, 2);
-      state.targetFrameMs = compact ? 50 : 16;
-      if (compact && state.playing) {
-        state.playing = false;
-        toggle.textContent = "▶";
-      }
+      state.targetFrameMs = compact ? 42 : 16;
       const rect = canvas.getBoundingClientRect();
       canvas.width = Math.max(1, Math.floor(rect.width * state.dpr));
       canvas.height = Math.max(1, Math.floor(rect.height * state.dpr));
