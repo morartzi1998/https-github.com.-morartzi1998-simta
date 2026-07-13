@@ -471,7 +471,19 @@
 
     @media (max-width: 760px) {
       body {
-        overflow: auto;
+        display: block;
+        min-height: 100dvh;
+        overflow: hidden;
+      }
+
+      .stage {
+        min-height: 100dvh;
+        padding-bottom: calc(84px + env(safe-area-inset-bottom));
+      }
+
+      canvas {
+        height: 100dvh;
+        min-height: 100dvh;
       }
 
       .topbar {
@@ -483,9 +495,12 @@
       }
 
       .controls {
-        position: sticky;
+        position: fixed;
+        right: 0;
         bottom: 0;
-        padding: 8px 10px;
+        left: 0;
+        z-index: 20;
+        padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
       }
 
       .quick-actions {
@@ -497,7 +512,7 @@
         position: fixed;
         right: 0;
         left: 0;
-        bottom: 62px;
+        bottom: calc(62px + env(safe-area-inset-bottom));
         grid-template-columns: 1fr;
         width: 100vw;
         gap: 10px;
